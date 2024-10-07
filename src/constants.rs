@@ -7,6 +7,8 @@ pub const ERROR_FILENAME: &str = "error.html";
 
 /// The site data folder path
 pub const SITE_DATA_FOLDER: &str = "data";
+/// The site benchmarks run folder
+pub const SITE_BENCHMARKS_RUNS_FOLDER: &str = "runs";
 /// The site plots folder
 pub const SITE_PLOTS_FOLDER: &str = "plots";
 /// The site flamegraphs folder

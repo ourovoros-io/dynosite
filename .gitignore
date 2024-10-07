@@ -3,3 +3,4 @@ Cargo.lock
 site
 .DS_Store
 config.toml
+setup.sh

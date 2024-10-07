@@ -380,7 +380,10 @@ fn generate_flamegraphs(
 
     let mut html = String::new();
 
-    for file_name in &[previous_file_name, current_file_name] {
+    // Start flexbox container
+    html.push_str("<div style=\"display: flex; justify-content: space-between;\">");
+
+    for (index, file_name) in [previous_file_name, current_file_name].iter().enumerate() {
         let flamegraph_path = site_flamegraphs_folder.join(file_name);
         let flamegraph_files = std::fs::read_dir(&flamegraph_path).map_err(|e| wrap!(e.into()))?;
 
@@ -396,13 +399,23 @@ fn generate_flamegraphs(
                     let flamegraph_file_path =
                         flamegraph_path.display().to_string().replace("site/", "");
 
-                    html.push_str(&format!(
-                    "<p><i class=\"material-icons\">whatshot</i> <a href=\"{flamegraph_file_path}/{file_name}\" target=\"_blank\">Flamegraph : {file_name}</a></p>",
-                ));
+                    // Center the second item
+                    if index == 1 {
+                        html.push_str(&format!(
+                            "<div style=\"margin-left: auto; margin-right: auto;\"><i class=\"material-icons\">whatshot</i> <a href=\"{flamegraph_file_path}/{file_name}\" target=\"_blank\">Previous Flamegraph : {file_name}</a></div>",
+                        ));
+                    } else {
+                        html.push_str(&format!(
+                            "<div><i class=\"material-icons\">whatshot</i> <a href=\"{flamegraph_file_path}/{file_name}\" target=\"_blank\">Current Flamegraph : {file_name}</a></div>",
+                        ));
+                    }
                 }
             }
         }
     }
+
+    // End flexbox container
+    html.push_str("</div>");
 
     Ok(html)
 }
@@ -427,7 +440,7 @@ fn generate_plots(current_folder: &str, file_name: &str) -> String {
         html.push_str("<div class=\"col s12 m6\">");
         html.push_str(&format!("<h5>Previous Benchmark {title}</h5>"));
         html.push_str(&format!(
-            "<img src=\"{current_folder}/previous_{name}_{suffix}.png\" alt=\"Previous Benchmark {title}\" style=\"width: 100%;\">"
+            "<img src=\"{current_folder}/previous_{name}_{suffix}.png\" alt=\"Previous Benchmark {title}\" class=\"responsive-img\">"
         ));
         html.push_str("</div>");
 
@@ -435,7 +448,7 @@ fn generate_plots(current_folder: &str, file_name: &str) -> String {
         html.push_str("<div class=\"col s12 m6\">");
         html.push_str(&format!("<h5>Current Benchmark {title}</h5>"));
         html.push_str(&format!(
-            "<img src=\"{current_folder}/current_{name}_{suffix}.png\" alt=\"Current Benchmark {title}\" style=\"width: 100%;\">"
+            "<img src=\"{current_folder}/current_{name}_{suffix}.png\" alt=\"Current Benchmark {title}\" class=\"responsive-img\">"
         ));
         html.push_str("</div>");
 
