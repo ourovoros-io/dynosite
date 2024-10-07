@@ -126,7 +126,10 @@ where
     // println!("Phases length: {}", phases.len());
 
     let mut chart = ChartBuilder::on(&upper)
-        .caption(title, ("sans-serif", LABEL_FONT_SIZE).into_font().color(&BLACK)) // Set title color to black
+        .caption(
+            title,
+            ("sans-serif", LABEL_FONT_SIZE).into_font().color(&BLACK),
+        ) // Set title color to black
         .margin(10)
         .x_label_area_size(50)
         .y_label_area_size(50)
@@ -138,32 +141,48 @@ where
         .x_labels(phases.len())
         .y_labels(10)
         .x_label_formatter(&|x| {
-            let is_between = |x: i64, start: i64, end: i64| -> bool {
-                x >= start && x <= end
-            };
+            let is_between = |x: i64, start: i64, end: i64| -> bool { x >= start && x <= end };
 
             let phase = phases.iter().find(|p| {
                 // println!("Phase name : {}", p.name);
                 // println!("x: {}, start_time: {}, end_time : {}", x, i64::try_from(p.start_time.unwrap().as_millis()).unwrap(), i64::try_from(p.end_time.unwrap().as_millis()).unwrap());
-                is_between(i64::try_from(p.start_time.unwrap().as_millis()).unwrap(), *x, x + 100) 
+                is_between(
+                    i64::try_from(p.start_time.unwrap().as_millis()).unwrap(),
+                    *x,
+                    x + 100,
+                )
             });
 
             if let Some(phase) = phase {
-                format!("{}-{}",  x, phase.name.to_string().split_whitespace().next().unwrap())
+                format!(
+                    "{}-{}",
+                    x,
+                    phase.name.to_string().split_whitespace().next().unwrap()
+                )
             } else {
                 format!("{x}")
             }
         })
-        .label_style(("sans-serif", X_AXIS_LABEL_FONT_SIZE).into_font().color(&BLACK)) 
+        .label_style(
+            ("sans-serif", X_AXIS_LABEL_FONT_SIZE)
+                .into_font()
+                .color(&BLACK),
+        )
         .draw()
         .map_err(|e| wrap!(e.into()))?;
 
     let opacity = 0.5;
-    
+
     let colors = vec![
-        ("compile to ast", RGBAColor(255, 0, 0, opacity)),  // Red
-        ("parse the program to a concrete syntax tree (CST)", RGBAColor(0, 255, 0, opacity)),   // Green
-        ("parse the concrete syntax tree (CST) to a typed AST", RGBAColor(0, 0, 255, opacity)),   // Blue
+        ("compile to ast", RGBAColor(255, 0, 0, opacity)), // Red
+        (
+            "parse the program to a concrete syntax tree (CST)",
+            RGBAColor(0, 255, 0, opacity),
+        ), // Green
+        (
+            "parse the concrete syntax tree (CST) to a typed AST",
+            RGBAColor(0, 0, 255, opacity),
+        ), // Blue
         ("compile ast to asm", RGBAColor(255, 165, 0, opacity)), // Orange
         ("generate JSON ABI program", RGBAColor(255, 0, 255, opacity)), // Magenta
         ("compile asm to bytecode", RGBAColor(0, 255, 255, opacity)), // Cyan
@@ -173,8 +192,12 @@ where
     for phase in &phases {
         let phase_start = i64::try_from(phase.start_time.unwrap().as_millis()).unwrap();
         let phase_end = i64::try_from(phase.end_time.unwrap().as_millis()).unwrap();
-        let color = colors.iter().find(|(name, _)| phase.name.contains(name)).unwrap().1;
-        
+        let color = colors
+            .iter()
+            .find(|(name, _)| phase.name.contains(name))
+            .unwrap()
+            .1;
+
         chart
             .draw_series(std::iter::once(Rectangle::new(
                 [(phase_start, 0), (phase_end, y_max)],
@@ -191,23 +214,27 @@ where
     let legend_font = ("sans-serif", 10).into_font().color(&BLACK); // Smaller font size for the legend
 
     let legend_spacing = 210; // Adjust the spacing between legend items
-    let legend_items: Vec<_> = colors.iter().enumerate().map(|(i, (name, color))| {
-        // Draw the colored circle
-        let circle = Circle::new(
-            (10 + i as i32 * legend_spacing, 10), // Adjust the x position for each legend item
-            5, // Radius of the circle
-            color.filled(),
-        );
+    let legend_items: Vec<_> = colors
+        .iter()
+        .enumerate()
+        .map(|(i, (name, color))| {
+            // Draw the colored circle
+            let circle = Circle::new(
+                (10 + i as i32 * legend_spacing, 10), // Adjust the x position for each legend item
+                5,                                    // Radius of the circle
+                color.filled(),
+            );
 
-        // Draw the text next to the circle
-        let text = Text::new(
-            format!("{}", name),
-            (20 + i as i32 * legend_spacing, 10),
-            legend_font.clone(),
-        );
+            // Draw the text next to the circle
+            let text = Text::new(
+                format!("{}", name),
+                (20 + i as i32 * legend_spacing, 10),
+                legend_font.clone(),
+            );
 
-        (circle, text)
-    }).collect();
+            (circle, text)
+        })
+        .collect();
 
     for (circle, text) in legend_items {
         lower.draw(&circle).map_err(|e| wrap!(e.into()))?;
