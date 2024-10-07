@@ -86,6 +86,69 @@ pub fn generate(
                     ));
                 }
 
+                html.push_str("<table class=\"striped\">");
+                html.push_str("<thead><tr><th>Metric</th><th>Previous Benchmark</th><th>Current Benchmark</th></tr></thead>");
+                html.push_str("<tbody>");
+
+                html.push_str(&format!(
+                    "<tr><td>Bytecode Size</td><td>{} bytes</td><td>{} bytes</td></tr>",
+                    previous_benchmarks
+                        .benchmarks
+                        .iter()
+                        .find(|b| file_name.contains(&b.name))
+                        .unwrap()
+                        .asm_information
+                        .clone()
+                        .unwrap()["bytecode_size"],
+                    current_benchmarks
+                        .benchmarks
+                        .iter()
+                        .find(|b| file_name.contains(&b.name))
+                        .unwrap()
+                        .asm_information
+                        .clone()
+                        .unwrap()["bytecode_size"]
+                ));
+
+                html.push_str(&format!(
+                    "<tr><td>Data Section</td><td>Size : {} - Used : {}</td><td>Size : {} - Used : {}</td></tr>",
+                    previous_benchmarks
+                        .benchmarks
+                        .iter()
+                        .find(|b| file_name.contains(&b.name))
+                        .unwrap()
+                        .asm_information
+                        .clone()
+                        .unwrap()["data_section"]["size"],
+                    previous_benchmarks
+                        .benchmarks
+                        .iter()
+                        .find(|b| file_name.contains(&b.name))
+                        .unwrap()
+                        .asm_information
+                        .clone()
+                        .unwrap()["data_section"]["used"],
+                    current_benchmarks
+                        .benchmarks
+                        .iter()
+                        .find(|b| file_name.contains(&b.name))
+                        .unwrap()
+                        .asm_information
+                        .clone()
+                        .unwrap()["data_section"]["size"],
+                    current_benchmarks
+                        .benchmarks
+                        .iter()
+                        .find(|b| file_name.contains(&b.name))
+                        .unwrap()
+                        .asm_information
+                        .clone()
+                        .unwrap()["data_section"]["used"]
+                ));
+
+                html.push_str("</tbody></table>");
+
+
                 html.push_str(&generate_flamegraphs(
                     previous_file_name,
                     current_file_name,
@@ -101,9 +164,11 @@ pub fn generate(
                 )?);
 
                 html.push_str("</tbody></table>");
+
                 let current_plot_folder = std::path::Path::new(crate::constants::SITE_DATA_FOLDER)
                     .join(folder_name)
                     .join(crate::constants::SITE_PLOTS_FOLDER);
+
                 html.push_str(&generate_plots(
                     &current_plot_folder.display().to_string(),
                     file_name,
@@ -478,6 +543,7 @@ pub fn generate_error_page() -> String {
     html
 }
 
+/// TODO : We need to just copy the ones related to our run and not the whole folder
 fn copy_flamegraph_folder(src: &std::path::Path, dest: &std::path::Path) -> Result<()> {
     if !dest.exists() {
         std::fs::create_dir_all(dest)?;
