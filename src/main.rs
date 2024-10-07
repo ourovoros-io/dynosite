@@ -54,7 +54,12 @@ fn run() -> Result<()> {
 
     generate_plots(&previous_benchmarks, &current_benchmarks, &plots_folder)?;
 
-    copy_latest_benchmarks(&date_time, &previous_benchmarks_path, &current_benchmarks_path).map_err(|e| wrap!(e))?;
+    copy_latest_benchmarks(
+        &date_time,
+        &previous_benchmarks_path,
+        &current_benchmarks_path,
+    )
+    .map_err(|e| wrap!(e))?;
 
     Ok(())
 }
@@ -137,7 +142,11 @@ fn generate_plots(
     Ok(())
 }
 
-fn copy_latest_benchmarks(date_time: &str, previous_benchmarks_path: &std::path::Path, current_benchmarks_path: &std::path::Path) -> Result<()> {
+fn copy_latest_benchmarks(
+    date_time: &str,
+    previous_benchmarks_path: &std::path::Path,
+    current_benchmarks_path: &std::path::Path,
+) -> Result<()> {
     let site_benchmarks_run_folder = std::path::Path::new(constants::SITE_FOLDER)
         .join(constants::SITE_DATA_FOLDER)
         .join(date_time)
@@ -149,14 +158,14 @@ fn copy_latest_benchmarks(date_time: &str, previous_benchmarks_path: &std::path:
 
     std::fs::copy(
         &previous_benchmarks_path,
-        site_benchmarks_run_folder
-            .join(previous_benchmarks_path.file_name().unwrap()),
-    ).map_err(|e| wrap!(e.into()))?;
+        site_benchmarks_run_folder.join(previous_benchmarks_path.file_name().unwrap()),
+    )
+    .map_err(|e| wrap!(e.into()))?;
 
     std::fs::copy(
         &current_benchmarks_path,
-        site_benchmarks_run_folder
-            .join(current_benchmarks_path.file_name().unwrap()),
-    ).map_err(|e| wrap!(e.into()))?;
+        site_benchmarks_run_folder.join(current_benchmarks_path.file_name().unwrap()),
+    )
+    .map_err(|e| wrap!(e.into()))?;
     Ok(())
 }
