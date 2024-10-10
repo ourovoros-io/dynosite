@@ -102,7 +102,7 @@ fn generate_html(
         current_benchmarks,
         previous_benchmarks_filename.display().to_string().as_str(),
         current_benchmarks_filename.display().to_string().as_str(),
-        &utils::get_stats_collection(options).map_err(|e| wrap!(e))?,
+        &utils::get_latest_stats_collection(&options.benchmarks_folder).map_err(|e| wrap!(e))?,
         options,
     )
     .map_err(|e| wrap!(e))?;
@@ -157,13 +157,13 @@ fn copy_latest_benchmarks(
     }
 
     std::fs::copy(
-        &previous_benchmarks_path,
+        previous_benchmarks_path,
         site_benchmarks_run_folder.join(previous_benchmarks_path.file_name().unwrap()),
     )
     .map_err(|e| wrap!(e.into()))?;
 
     std::fs::copy(
-        &current_benchmarks_path,
+        current_benchmarks_path,
         site_benchmarks_run_folder.join(current_benchmarks_path.file_name().unwrap()),
     )
     .map_err(|e| wrap!(e.into()))?;

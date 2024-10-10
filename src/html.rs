@@ -49,6 +49,7 @@ pub fn generate(
             // Add collapsible structure for the stats collection
             html.push_str("<ul class=\"collapsible\">");
 
+            // TODO : Fix the bug
             for (file_name, stats) in &stats_collection.0 {
                 html.push_str("<li>");
                 html.push_str(&format!(
@@ -145,10 +146,9 @@ pub fn generate(
                         .clone()
                         .unwrap()["data_section"]["used"]
                 ));
-
                 html.push_str("</tbody></table>");
 
-
+                html.push_str("<h3>Flamegraphs</h3>");
                 html.push_str(&generate_flamegraphs(
                     previous_file_name,
                     current_file_name,
@@ -163,8 +163,7 @@ pub fn generate(
                         .as_str(),
                 )?);
 
-                html.push_str("</tbody></table>");
-
+                html.push_str("<h3>Plots</h3>");
                 let current_plot_folder = std::path::Path::new(crate::constants::SITE_DATA_FOLDER)
                     .join(folder_name)
                     .join(crate::constants::SITE_PLOTS_FOLDER);
@@ -440,8 +439,13 @@ fn generate_flamegraphs(
         .join(current_folder)
         .join(crate::constants::SITE_FLAMEGRAPHS_FOLDER);
 
-    copy_flamegraph_folder(&benchmarks_flamegraphs_folder, &site_flamegraphs_folder)
-        .map_err(|e| wrap!(e))?;
+    copy_flamegraphs_folder(
+        &benchmarks_flamegraphs_folder,
+        &site_flamegraphs_folder,
+        std::path::Path::new(previous_file_name),
+        std::path::Path::new(current_file_name),
+    )
+    .map_err(|e| wrap!(e))?;
 
     let mut html = String::new();
 
@@ -543,19 +547,38 @@ pub fn generate_error_page() -> String {
     html
 }
 
-/// TODO : We need to just copy the ones related to our run and not the whole folder
-fn copy_flamegraph_folder(src: &std::path::Path, dest: &std::path::Path) -> Result<()> {
+fn copy_flamegraphs_folder(
+    src: &std::path::Path,
+    dest: &std::path::Path,
+    previous_benchmarks_path: &std::path::Path,
+    current_benchmarks_path: &std::path::Path,
+) -> Result<()> {
     if !dest.exists() {
         std::fs::create_dir_all(dest)?;
     }
-
     for entry in std::fs::read_dir(src)? {
         let entry = entry?;
         let file_type = entry.file_type()?;
 
-        if file_type.is_dir() {
-            copy_flamegraph_folder(&entry.path(), &dest.join(entry.file_name()))?;
-        } else {
+        if file_type.is_dir()
+            && entry
+                .file_name()
+                .to_str()
+                .unwrap()
+                .contains(&previous_benchmarks_path.display().to_string())
+            || entry
+                .file_name()
+                .to_str()
+                .unwrap()
+                .contains(&current_benchmarks_path.display().to_string())
+        {
+            copy_flamegraphs_folder(
+                &entry.path(),
+                &dest.join(entry.file_name()),
+                previous_benchmarks_path,
+                current_benchmarks_path,
+            )?;
+        } else if file_type.is_file() {
             std::fs::copy(entry.path(), dest.join(entry.file_name()))?;
         }
     }

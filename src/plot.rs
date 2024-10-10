@@ -173,7 +173,7 @@ where
 
     let opacity = 0.5;
 
-    let colors = vec![
+    let colors = [
         ("compile to ast", RGBAColor(255, 0, 0, opacity)), // Red
         (
             "parse the program to a concrete syntax tree (CST)",
@@ -227,7 +227,7 @@ where
 
             // Draw the text next to the circle
             let text = Text::new(
-                format!("{}", name),
+                name.to_string(),
                 (20 + i as i32 * legend_spacing, 10),
                 legend_font.clone(),
             );

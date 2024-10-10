@@ -52,7 +52,7 @@ pub fn get_latest_stats_file(folder: &Path) -> Result<PathBuf> {
         .filter_map(|entry| {
             let path = entry.path();
             if path.is_file() && path.file_name()?.to_str()?.ends_with("json") {
-                let metadata = std::fs::metadata(&path).ok()?;
+                let metadata = entry.metadata().ok()?;
                 let modified = metadata.modified().ok()?;
                 Some((path, modified))
             } else {
@@ -63,7 +63,6 @@ pub fn get_latest_stats_file(folder: &Path) -> Result<PathBuf> {
 
     // Sort entries by modification time in descending order
     entries.sort_by_key(|&(_, modified)| std::cmp::Reverse(modified));
-
     if let Some((latest_path, _)) = entries.first() {
         Ok(latest_path.clone())
     } else {
@@ -79,18 +78,16 @@ pub fn get_date_time() -> String {
 }
 
 /// Get the stats collection from the latest stats file
-pub fn get_stats_collection(
-    options: &crate::cli::Options,
+pub fn get_latest_stats_collection(
+    benchmarks_folder: &Path,
 ) -> crate::error::Result<crate::types::Collection> {
-    let stats_collection = crate::utils::get_latest_stats_file(
-        &options
-            .benchmarks_folder
-            .join(crate::constants::BENCHMARKS_STATS_FOLDER),
+    let latest_stats_collection = crate::utils::get_latest_stats_file(
+        &benchmarks_folder.join(crate::constants::BENCHMARKS_STATS_FOLDER),
     )
     .map_err(|e| wrap!(e))?;
 
     let stats_collection =
-        std::fs::read_to_string(stats_collection).map_err(|e| wrap!(e.into()))?;
+        std::fs::read_to_string(latest_stats_collection).map_err(|e| wrap!(e.into()))?;
 
     let stats_collection: crate::types::Collection =
         serde_json::from_str(&stats_collection).map_err(|e| wrap!(e.into()))?;
