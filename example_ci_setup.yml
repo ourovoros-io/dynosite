@@ -13,6 +13,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.TOKEN }}
       TARGET_REPO: ${{ secrets.TARGET_REPO }}
+      TARGET_NAME: ${{ secrets.TARGET_NAME }}
 
     steps:
     - name: Checkout repository
@@ -42,10 +43,6 @@ jobs:
     - name: Check out PR branch
       run: |
         git checkout pr-${{ env.PR_NUMBER }}
-
-    - name: Build sway
-      run: |
-        cargo build --release --features profiler
         
     - name: Extract PR hash
       id: extract_pr_hash
@@ -65,16 +62,33 @@ jobs:
 
     - name: Clone target repository
       run: |
-        git clone https://github.com/${{ env.TARGET_REPO }} ${{ env.TARGET_REPO }}
-        cd ${{ env.TARGET_REPO }}
+        cd /home/runner/work/
+        git clone https://github.com/${{ env.TARGET_REPO }} ${{ env.TARGET_NAME }}
+        cd ${{ env.TARGET_NAME }}
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
+
+    - name: Get folder name inside site/data
+      id: get_folder_name
+      run: |
+          FOLDER_NAME=$(ls -d /home/runner/work/${{ env.TARGET_NAME }}/site/data/*/ | xargs -n 1 basename)
+          echo "FOLDER_NAME=$FOLDER_NAME" >> $GITHUB_ENV
 
     - name: Move benchmarks data to dyno folder
       id: move_benchmarks_data_to_dyno_folder
       run: |
-        mkdir -p /home/runner/work/benchmarks
-        cp -r site/data/* /home/runner/work/benchmarks/
+          mkdir -p /home/runner/work/benchmarks
+          mkdir -p /home/runner/work/benchmarks/stats
+          mkdir -p /home/runner/work/benchmarks/runs
+          mkdir -p /home/runner/work/benchmarks/flamegraphs
+          cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/* /home/runner/work/benchmarks/
+          cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/${{ env.FOLDER_NAME }}/stats/* /home/runner/work/benchmarks/stats
+          cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/${{ env.FOLDER_NAME }}/runs/* /home/runner/work/benchmarks/runs
+          cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/${{ env.FOLDER_NAME }}/flamegraphs/* /home/runner/work/benchmarks/flamegraphs
+
+    - name: Build sway
+      run: |
+        cargo build --release --features profiler
 
     - name: Install dyno tool
       run: |
@@ -85,38 +99,43 @@ jobs:
         cd dyno
         cargo build --release
         cp target/release/dyno /home/runner/work/
-
+        sudo rm -rf /home/runner/work/profiler
+    
     - name: Run dyno tool
       run: |
         cd /home/runner/work/
-        ./dyno -t sway/sway/test/src/sdk-harness/test_projects/ -f sway/sway/target/release/forc
+        ./dyno -t sway/sway/test/src/sdk-harness/test_projects/hashing/ -f sway/sway/target/release/forc
 
     - name: Install Dyno Site
       run: |
         cd /home/runner/work/
+        mkdir sitebuilder
+        cd sitebuilder
         git clone https://github.com/ourovoros-io/dynosite.git
         cd dynosite
         cargo build --release
+        cp target/release/dynosite /home/runner/work/
+        sudo rm -rf /home/runner/work/sitebuilder
 
     - name: Run Dyno Site
       run: |
         cd /home/runner/work/ 
-        ./dynosite/target/release/dynosite -b /home/runner/work/benchmarks -p "${{ env.PR_HASH }}" -t "${{ env.PR_TITLE }}" -l "${{ env.PR_URL }}"
+        ./dynosite -b /home/runner/work/benchmarks -p "${{ env.PR_HASH }}" -t "${{ env.PR_TITLE }}" -l "${{ env.PR_URL }}"
 
     - name: Copy generated files
       run: |
-        cp -r /home/runner/work/data ${{ env.TARGET_REPO }}/site/data
-        cp /home/runner/work/error.html ${{ env.TARGET_REPO }}/site
-        cp /home/runner/work/index.html ${{ env.TARGET_REPO }}/site
+        cp -r /home/runner/work/site/data /home/runner/work/${{ env.TARGET_NAME }}/site/
+        cp /home/runner/work/site/error.html /home/runner/work/${{ env.TARGET_NAME }}/site
+        cp /home/runner/work/site/index.html /home/runner/work/${{ env.TARGET_NAME }}/site
 
     - name: Update README
       run: |
-        cd ${{ env.TARGET_REPO }}
-        echo "[View the generated index.html](./index.html)" > README.md
+        cd /home/runner/work/${{ env.TARGET_NAME }}
+        echo "[View the generated index.html](./site/index.html)" > README.md
 
     - name: Commit and push changes
       run: |
-        cd ${{ env.TARGET_REPO }}
+        cd /home/runner/work/${{ env.TARGET_NAME }}
         git add .
         git commit -m "Update benchmarks and data for PR #${{ env.PR_NUMBER }}"
-        git push origin main
+        git push https://x-access-token:${{ env.GITHUB_TOKEN }}@github.com/${{ env.TARGET_REPO }}.git main
