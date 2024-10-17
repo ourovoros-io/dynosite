@@ -23,8 +23,14 @@ function error_exit {
 # Run the dyno tool
 "$DYNO" -t "$SWAY_TEST_FOLDER" -f "$SWAY_FORC_LOCATION" --flamegraph || error_exit "Failed to run dyno tool"
 
-# Get the item in the benchmarks/runs folder
-ITEM_PATH=$(find "$BENCHMARKS_FOLDER/runs" -type f -mindepth 1 -maxdepth 1 | head -n 1) || error_exit "Failed to get item in benchmarks/runs folder"
+# Wait for 5 seconds
+sleep 5
+
+# Run it twice to get the benchmarks folder structure right
+"$DYNO" -t "$SWAY_TEST_FOLDER" -f "$SWAY_FORC_LOCATION" --flamegraph || error_exit "Failed to run dyno tool"
+
+# Get the item in the benchmarks/stats folder
+ITEM_PATH=$(find "$BENCHMARKS_FOLDER/stats" -type f -mindepth 1 -maxdepth 1 | head -n 1) || error_exit "Failed to get item in benchmarks/stats folder"
 ITEM_NAME=$(basename "$ITEM_PATH" .json) || error_exit "Failed to get item name"
 
 # Create a new local repository
