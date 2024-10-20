@@ -14,6 +14,10 @@ pub struct Options {
     pub benchmarks_folder: PathBuf,
 
     #[clap(short, long)]
+    /// Data only mode
+    pub data_only: bool,
+
+    #[clap(short, long)]
     /// The site name (Optional)
     pub site_name: Option<String>,
 

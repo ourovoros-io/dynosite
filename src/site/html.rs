@@ -7,12 +7,12 @@ use crate::error::Result;
 use crate::wrap;
 
 /// Generate the HTML for the site
-pub fn generate(site: &DynoSite) -> Result<String> {
+pub fn generate(site: &DynoSite, data_only: bool) -> Result<String> {
     let mut html = generate_header();
 
     // TODO : We might wanna have a check that makes sure the system settings are the same for all the benchmarks
     let system_settings_benchmarks = &serde_json::from_str(
-        &std::fs::read_to_string(&site.data.executions[0].previous_benchmarks)
+        &std::fs::read_to_string(&site.data.executions[0].current_benchmarks)
             .map_err(|e| wrap!(e.into()))?,
     )
     .map_err(|e| wrap!(e.into()))?;
@@ -239,28 +239,29 @@ pub fn generate(site: &DynoSite) -> Result<String> {
                         .ok_or_else(|| wrap!("Failed to get the asm information for data section used from the current benchmarks.".into()))?["data_section"]["used"]
                 ));
                     html.push_str("</tbody></table>");
+                    if !data_only {
+                        html.push_str("<h3>Flamegraphs</h3>");
+                        html.push_str(&generate_flamegraphs(
+                            current_benchmarks
+                                .benchmarks
+                                .iter()
+                                .find(|b| file_name.contains(&b.name))
+                                .ok_or_else(|| {
+                                    wrap!("Failed to find the benchmark in the current benchmarks."
+                                        .into())
+                                })?
+                                .name
+                                .as_str(),
+                            &current_execution.flamegraphs_folder,
+                        )?);
 
-                    html.push_str("<h3>Flamegraphs</h3>");
-                    html.push_str(&generate_flamegraphs(
-                        current_benchmarks
-                            .benchmarks
-                            .iter()
-                            .find(|b| file_name.contains(&b.name))
-                            .ok_or_else(|| {
-                                wrap!("Failed to find the benchmark in the current benchmarks."
-                                    .into())
-                            })?
-                            .name
-                            .as_str(),
-                        &current_execution.flamegraphs_folder,
-                    )?);
+                        html.push_str("<h3>Plots</h3>");
 
-                    html.push_str("<h3>Plots</h3>");
-
-                    html.push_str(
-                        &generate_plots(&current_execution.plots_folder, file_name)
-                            .map_err(|e| wrap!(e))?,
-                    );
+                        html.push_str(
+                            &generate_plots(&current_execution.plots_folder, file_name)
+                                .map_err(|e| wrap!(e))?,
+                        );
+                    }
 
                     html.push_str("</div>");
                     html.push_str("</li>");
@@ -309,7 +310,7 @@ fn generate_header() -> String {
     header
 }
 
-fn generate_system_specs(previous_benchmarks: &Benchmarks) -> String {
+fn generate_system_specs(benchmarks: &Benchmarks) -> String {
     let mut html = String::new();
 
     html.push_str("<ul class=\"collapsible\">");
@@ -322,74 +323,74 @@ fn generate_system_specs(previous_benchmarks: &Benchmarks) -> String {
     let specs = [
         (
             "Physical Core Count",
-            previous_benchmarks
+            benchmarks
                 .system_specs
                 .physical_core_count
                 .to_string(),
         ),
         (
             "Total Memory",
-            previous_benchmarks.system_specs.total_memory.to_string(),
+            benchmarks.system_specs.total_memory.to_string(),
         ),
         (
             "Free Memory",
-            previous_benchmarks.system_specs.free_memory.to_string(),
+            benchmarks.system_specs.free_memory.to_string(),
         ),
         (
             "Available Memory",
-            previous_benchmarks
+            benchmarks
                 .system_specs
                 .available_memory
                 .to_string(),
         ),
         (
             "Used Memory",
-            previous_benchmarks.system_specs.used_memory.to_string(),
+            benchmarks.system_specs.used_memory.to_string(),
         ),
         (
             "Total Swap",
-            previous_benchmarks.system_specs.total_swap.to_string(),
+            benchmarks.system_specs.total_swap.to_string(),
         ),
         (
             "Free Swap",
-            previous_benchmarks.system_specs.free_swap.to_string(),
+            benchmarks.system_specs.free_swap.to_string(),
         ),
         (
             "Used Swap",
-            previous_benchmarks.system_specs.used_swap.to_string(),
+            benchmarks.system_specs.used_swap.to_string(),
         ),
         (
             "Uptime",
-            previous_benchmarks.system_specs.uptime.to_string(),
+            benchmarks.system_specs.uptime.to_string(),
         ),
         (
             "Boot Time",
-            previous_benchmarks.system_specs.boot_time.to_string(),
+            benchmarks.system_specs.boot_time.to_string(),
         ),
         (
             "Load Average",
-            format!("{:?}", previous_benchmarks.system_specs.load_average),
+            format!("{:?}", benchmarks.system_specs.load_average),
         ),
-        ("Name", previous_benchmarks.system_specs.name.clone()),
+        ("Name", benchmarks.system_specs.name.clone()),
         (
             "Kernel Version",
-            previous_benchmarks.system_specs.kernel_version.clone(),
+            benchmarks.system_specs.kernel_version.clone(),
         ),
         (
             "OS Version",
-            previous_benchmarks.system_specs.os_version.clone(),
+            benchmarks.system_specs.os_version.clone(),
         ),
         (
             "Long OS Version",
-            previous_benchmarks.system_specs.long_os_version.clone(),
+            benchmarks.system_specs.long_os_version.clone(),
         ),
         (
             "Distribution ID",
-            previous_benchmarks.system_specs.distribution_id.clone(),
+            benchmarks.system_specs.distribution_id.clone(),
         ),
         (
             "Host Name",
-            previous_benchmarks.system_specs.host_name.clone(),
+            benchmarks.system_specs.host_name.clone(),
         ),
     ];
 
@@ -409,7 +410,7 @@ fn generate_system_specs(previous_benchmarks: &Benchmarks) -> String {
     );
     html.push_str("<tbody>");
 
-    for cpu in &previous_benchmarks.system_specs.cpus {
+    for cpu in &benchmarks.system_specs.cpus {
         html.push_str(&format!(
             "<tr><td>{}</td><td>{}</td><td>{}</td><td>{} MHz</td></tr>",
             cpu.name, cpu.vendor_id, cpu.brand, cpu.frequency
@@ -603,15 +604,15 @@ fn remove_first_component(path: &Path) -> PathBuf {
 }
 
 fn parse_timestamp(file_name: &str) -> Result<chrono::NaiveDateTime> {
-    let file = if file_name.contains("/") {
-        // Get the part before the last / in the file name 
+    let file = if file_name.contains('/') {
+        // Get the part before the last / in the file name
         let file_name_parts = file_name.split('/').collect::<Vec<_>>();
-        
+
         file_name_parts[file_name_parts.len() - 2]
-    }else {
+    } else {
         file_name
     };
-    
+
     // Find the index of the second last underscore
     if let Some(second_last_underscore_index) = find_second_last_underscore(file) {
         // Extract the timestamp part

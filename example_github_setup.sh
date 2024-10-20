@@ -4,14 +4,22 @@
 set -e
 
 # Variables
+# The repository name for the target repository to store the data
 REPO_NAME="YOUR_REPO_NAME"
+# Your GitHub username
 GITHUB_USERNAME="YOUR_GITHUB_USERNAME"
+# Your GitHub token
 GITHUB_TOKEN="YOUR_GITHUB_TOKEN"
 GITHUB_REPO_URL="https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/$GITHUB_USERNAME/$REPO_NAME.git"
+# The output folder where the dyno tool stores the data
 OUTPUT_FOLDER="site/data/"
+# The folder where the benchmarks are stored by dyno
 BENCHMARKS_FOLDER="benchmarks"
+# The folder where the sway tests are located
 SWAY_TEST_FOLDER="YOUR_SWAY_TEST_FOLDER"
+# The location of the sway forc file
 SWAY_FORC_LOCATION="YOUR_SWAY_FORC_LOCATION"
+# The location of the dyno file
 DYNO="YOUR_DYNO_LOCATION"
 
 # Function to print error message and exit
@@ -26,7 +34,7 @@ function error_exit {
 # Wait for 5 seconds
 sleep 5
 
-# Run it twice to get the benchmarks folder structure right
+# Run it twice to get the benchmarks folder structure with some intial data for stats
 "$DYNO" -t "$SWAY_TEST_FOLDER" -f "$SWAY_FORC_LOCATION" --flamegraph || error_exit "Failed to run dyno tool"
 
 # Get the item in the benchmarks/stats folder

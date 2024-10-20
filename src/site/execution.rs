@@ -173,6 +173,8 @@ impl Execution {
 
     /// Sync directories from source to target and all their contents
     /// Returns a list of paths regarding the final files and directories in source
+    /// TODO : use this to sync the runs, stats, plots, and flamegraphs folders
+    #[allow(dead_code)]
     fn sync_directories(source: &Path, target: &Path) -> Result<Vec<PathBuf>> {
         // Ensure the target directory exists
         if !target.exists() {
@@ -220,6 +222,7 @@ impl Execution {
     }
 
     /// Check if a file is modified
+    #[allow(dead_code)]
     fn is_file_modified(source: &Path, target: &Path) -> Result<bool> {
         let source_metadata = std::fs::metadata(source)?;
         let target_metadata = std::fs::metadata(target)?;
