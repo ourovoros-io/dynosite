@@ -7,6 +7,7 @@ use super::{
 };
 use crate::{error::Result, wrap};
 
+/// Represents a `DynoSite`
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct DynoSite {
     pub root_folder: PathBuf,

@@ -25,11 +25,11 @@ pub struct Options {
     /// The PR hash (Optional)
     pub pr_hash: Option<String>,
 
-    /// The PR title (Optional)
     #[clap(short = 't', long)]
+    /// The PR title (Optional)
     pub pr_title: Option<String>,
 
-    /// The PR link (Optional)
     #[clap(short = 'l', long)]
+    /// The PR link (Optional)
     pub pr_link: Option<String>,
 }

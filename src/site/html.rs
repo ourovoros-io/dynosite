@@ -42,11 +42,21 @@ pub fn generate(site: &DynoSite, data_only: bool) -> Result<String> {
 
     // TODO : refactor this
     sorted_folders.sort_by(|a, b| {
-        let folder_name_a = a.as_ref().unwrap().file_name().into_string().unwrap();
-        let folder_name_b = b.as_ref().unwrap().file_name().into_string().unwrap();
+        let folder_name_a = a
+            .as_ref()
+            .expect("Failed to get folder name a as ref")
+            .file_name()
+            .into_string()
+            .expect("Failed to get folder name a as string");
+        let folder_name_b = b
+            .as_ref()
+            .expect("Failed to get folder name b as ref")
+            .file_name()
+            .into_string()
+            .expect("Failed to get folder name b as string");
 
-        let timestamp_a = parse_timestamp(&folder_name_a).unwrap();
-        let timestamp_b = parse_timestamp(&folder_name_b).unwrap();
+        let timestamp_a = parse_timestamp(&folder_name_a).expect("Failed to parse timestamp a");
+        let timestamp_b = parse_timestamp(&folder_name_b).expect("Failed to parse timestamp b");
 
         timestamp_b.cmp(&timestamp_a)
     });
@@ -323,10 +333,7 @@ fn generate_system_specs(benchmarks: &Benchmarks) -> String {
     let specs = [
         (
             "Physical Core Count",
-            benchmarks
-                .system_specs
-                .physical_core_count
-                .to_string(),
+            benchmarks.system_specs.physical_core_count.to_string(),
         ),
         (
             "Total Memory",
@@ -338,35 +345,17 @@ fn generate_system_specs(benchmarks: &Benchmarks) -> String {
         ),
         (
             "Available Memory",
-            benchmarks
-                .system_specs
-                .available_memory
-                .to_string(),
+            benchmarks.system_specs.available_memory.to_string(),
         ),
         (
             "Used Memory",
             benchmarks.system_specs.used_memory.to_string(),
         ),
-        (
-            "Total Swap",
-            benchmarks.system_specs.total_swap.to_string(),
-        ),
-        (
-            "Free Swap",
-            benchmarks.system_specs.free_swap.to_string(),
-        ),
-        (
-            "Used Swap",
-            benchmarks.system_specs.used_swap.to_string(),
-        ),
-        (
-            "Uptime",
-            benchmarks.system_specs.uptime.to_string(),
-        ),
-        (
-            "Boot Time",
-            benchmarks.system_specs.boot_time.to_string(),
-        ),
+        ("Total Swap", benchmarks.system_specs.total_swap.to_string()),
+        ("Free Swap", benchmarks.system_specs.free_swap.to_string()),
+        ("Used Swap", benchmarks.system_specs.used_swap.to_string()),
+        ("Uptime", benchmarks.system_specs.uptime.to_string()),
+        ("Boot Time", benchmarks.system_specs.boot_time.to_string()),
         (
             "Load Average",
             format!("{:?}", benchmarks.system_specs.load_average),
@@ -376,10 +365,7 @@ fn generate_system_specs(benchmarks: &Benchmarks) -> String {
             "Kernel Version",
             benchmarks.system_specs.kernel_version.clone(),
         ),
-        (
-            "OS Version",
-            benchmarks.system_specs.os_version.clone(),
-        ),
+        ("OS Version", benchmarks.system_specs.os_version.clone()),
         (
             "Long OS Version",
             benchmarks.system_specs.long_os_version.clone(),
@@ -388,10 +374,7 @@ fn generate_system_specs(benchmarks: &Benchmarks) -> String {
             "Distribution ID",
             benchmarks.system_specs.distribution_id.clone(),
         ),
-        (
-            "Host Name",
-            benchmarks.system_specs.host_name.clone(),
-        ),
+        ("Host Name", benchmarks.system_specs.host_name.clone()),
     ];
 
     for (spec, value) in &specs {
