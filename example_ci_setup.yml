@@ -71,8 +71,8 @@ jobs:
     - name: Get folder name inside site/data
       id: get_folder_name
       run: |
-          FOLDER_NAME=$(ls -d /home/runner/work/${{ env.TARGET_NAME }}/site/data/*/ | xargs -n 1 basename)
-          echo "FOLDER_NAME=$FOLDER_NAME" >> $GITHUB_ENV
+        FOLDER_NAME=$(ls -d /home/runner/work/${{ env.TARGET_NAME }}/site/data/*/ | head -n 1 | xargs -n 1 basename)
+        echo "FOLDER_NAME=$FOLDER_NAME" >> $GITHUB_ENV
 
     - name: Move benchmarks data to dyno folder
       id: move_benchmarks_data_to_dyno_folder
