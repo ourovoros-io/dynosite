@@ -14,6 +14,10 @@ pub struct Options {
     pub benchmarks_folder: PathBuf,
 
     #[clap(short, long)]
+    /// Data only mode
+    pub data_only: bool,
+
+    #[clap(short, long)]
     /// The site name (Optional)
     pub site_name: Option<String>,
 
@@ -21,11 +25,11 @@ pub struct Options {
     /// The PR hash (Optional)
     pub pr_hash: Option<String>,
 
-    /// The PR title (Optional)
     #[clap(short = 't', long)]
+    /// The PR title (Optional)
     pub pr_title: Option<String>,
 
-    /// The PR link (Optional)
     #[clap(short = 'l', long)]
+    /// The PR link (Optional)
     pub pr_link: Option<String>,
 }

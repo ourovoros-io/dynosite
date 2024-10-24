@@ -7,6 +7,7 @@ use super::{
 };
 use crate::{error::Result, wrap};
 
+/// Represents a `DynoSite`
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct DynoSite {
     pub root_folder: PathBuf,
@@ -18,7 +19,7 @@ pub struct DynoSite {
 
 impl DynoSite {
     /// Initialize a new site either from a file or from scratch
-    pub fn init(site_name: &str) -> Result<Self> {
+    pub fn init(site_name: &str) -> crate::error::Result<Self> {
         let site_json = PathBuf::from(site_name).with_extension("json");
         let site = Self::new(site_name);
 
@@ -52,10 +53,10 @@ impl DynoSite {
     }
 
     /// Add an execution to the site
-    pub fn add_execution(&mut self, execution: &Execution) -> Result<()> {
+    pub fn add_execution(&mut self, execution: &Execution, data_only: bool) -> Result<()> {
         self.data.executions.push(execution.clone());
 
-        Self::generate_html(self).map_err(|e| wrap!(e))?;
+        Self::generate_html(self, data_only).map_err(|e| wrap!(e))?;
 
         Ok(())
     }
@@ -68,9 +69,9 @@ impl DynoSite {
     }
 
     /// Generate the HTML for the site and write the files to disk
-    pub fn generate_html(site: &DynoSite) -> Result<()> {
+    pub fn generate_html(site: &DynoSite, data_only: bool) -> Result<()> {
         // Generate the index HTML
-        let index_html = generate(site).map_err(|e| wrap!(e))?;
+        let index_html = generate(site, data_only).map_err(|e| wrap!(e))?;
 
         // Generate the HTML for the error page
         let error_html = generate_error_page();

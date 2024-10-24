@@ -36,7 +36,11 @@ impl Execution {
             .map_err(|e| wrap!(e))?;
 
         for run in &runs {
-            let run_file_name = run.file_name().unwrap().to_str().unwrap();
+            let run_file_name = run
+                .file_name()
+                .ok_or_else(|| wrap!("Failed to get filename for run".into()))?
+                .to_str()
+                .ok_or_else(|| wrap!("Failed to convert run filename to string".into()))?;
             let run_file_path = runs_folder.join(run_file_name);
             std::fs::copy(run, &run_file_path).map_err(|e| wrap!(e.into()))?;
         }
@@ -45,7 +49,11 @@ impl Execution {
             .map_err(|e| wrap!(e))?;
 
         for stat in &stats {
-            let stat_file_name = stat.file_name().unwrap().to_str().unwrap();
+            let stat_file_name = stat
+                .file_name()
+                .ok_or_else(|| wrap!("Failed to get filename for stat".into()))?
+                .to_str()
+                .ok_or_else(|| wrap!("Failed to convert stat filename to string".into()))?;
             let stat_file_path = stats_folder.join(stat_file_name);
             std::fs::copy(stat, &stat_file_path).map_err(|e| wrap!(e.into()))?;
         }
@@ -56,7 +64,15 @@ impl Execution {
         for flamegraph_folder in &flamegraphs {
             copy_dir_all(
                 flamegraph_folder,
-                &flamegraphs_folder.join(flamegraph_folder.file_name().unwrap().to_str().unwrap()),
+                &flamegraphs_folder.join(
+                    flamegraph_folder
+                        .file_name()
+                        .ok_or_else(|| wrap!("Failed to get filename for flamegraph".into()))?
+                        .to_str()
+                        .ok_or_else(|| {
+                            wrap!("Failed to convert flamegraph filename to string".into())
+                        })?,
+                ),
             )
             .map_err(|e| wrap!(e))?;
         }
@@ -114,8 +130,10 @@ impl Execution {
         options: &Options,
     ) -> Result<(PathBuf, PathBuf, PathBuf, PathBuf, PathBuf)> {
         // Create the root folder for the current execution and its sub folders
-        let root_folder = root_folder
-            .join(Self::get_current_execution_identifier(&options.benchmarks_folder).unwrap());
+        let root_folder = root_folder.join(
+            Self::get_current_execution_identifier(&options.benchmarks_folder)
+                .map_err(|e| wrap!(e))?,
+        );
 
         if !root_folder.exists() {
             std::fs::create_dir(&root_folder).map_err(|e| wrap!(e.into()))?;
@@ -156,7 +174,10 @@ impl Execution {
             get_latest_stats_file(&benchmarks_stats_path).map_err(|e| wrap!(e))?;
 
         // Keep the last part of the path
-        let stats_file_last_part = latest_stats_file_path.components().last().unwrap();
+        let stats_file_last_part = latest_stats_file_path
+            .components()
+            .last()
+            .ok_or_else(|| wrap!("Failed to get the last part of the stats file path".into()))?;
         let current_execution_identifier = PathBuf::from(stats_file_last_part.as_os_str());
 
         // Remove the file extension from the path and keep the folder path
@@ -173,6 +194,8 @@ impl Execution {
 
     /// Sync directories from source to target and all their contents
     /// Returns a list of paths regarding the final files and directories in source
+    /// TODO : use this to sync the runs, stats, plots, and flamegraphs folders
+    #[allow(dead_code)]
     fn sync_directories(source: &Path, target: &Path) -> Result<Vec<PathBuf>> {
         // Ensure the target directory exists
         if !target.exists() {
@@ -189,7 +212,11 @@ impl Execution {
 
         // Sync files and directories from source to target
         for source_path in &source_entries {
-            let target_path = target.join(source_path.file_name().unwrap());
+            let target_path = target.join(
+                source_path
+                    .file_name()
+                    .ok_or_else(|| wrap!("Failed to get filename for source".into()))?,
+            );
 
             if source_path.is_dir() {
                 // Recursively sync directories
@@ -204,13 +231,17 @@ impl Execution {
 
         // Remove files and directories from target that are not in source
         for target_path in &target_entries {
-            let source_path = source.join(target_path.file_name().unwrap());
+            let source_path = source.join(
+                target_path
+                    .file_name()
+                    .ok_or_else(|| wrap!("Failed to get filename for target".into()))?,
+            );
 
             if !source_path.exists() {
                 if target_path.is_dir() {
-                    std::fs::remove_dir_all(target_path)?;
+                    std::fs::remove_dir_all(target_path).map_err(|e| wrap!(e.into()))?;
                 } else {
-                    std::fs::remove_file(target_path)?;
+                    std::fs::remove_file(target_path).map_err(|e| wrap!(e.into()))?;
                 }
             }
         }
@@ -220,12 +251,13 @@ impl Execution {
     }
 
     /// Check if a file is modified
+    #[allow(dead_code)]
     fn is_file_modified(source: &Path, target: &Path) -> Result<bool> {
-        let source_metadata = std::fs::metadata(source)?;
-        let target_metadata = std::fs::metadata(target)?;
+        let source_metadata = std::fs::metadata(source).map_err(|e| wrap!(e.into()))?;
+        let target_metadata = std::fs::metadata(target).map_err(|e| wrap!(e.into()))?;
 
-        let source_modified = source_metadata.modified()?;
-        let target_modified = target_metadata.modified()?;
+        let source_modified = source_metadata.modified().map_err(|e| wrap!(e.into()))?;
+        let target_modified = target_metadata.modified().map_err(|e| wrap!(e.into()))?;
 
         Ok(source_modified > target_modified)
     }
@@ -354,9 +386,10 @@ pub fn copy_dir_all(src: &Path, dst: &Path) -> Result<()> {
         let entry = entry?;
         let ty = entry.file_type()?;
         if ty.is_dir() {
-            copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
+            copy_dir_all(&entry.path(), &dst.join(entry.file_name())).map_err(|e| wrap!(e))?;
         } else {
-            std::fs::copy(entry.path(), dst.join(entry.file_name()))?;
+            std::fs::copy(entry.path(), dst.join(entry.file_name()))
+                .map_err(|e| wrap!(e.into()))?;
         }
     }
     Ok(())

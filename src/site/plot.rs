@@ -24,36 +24,70 @@ pub fn generate_plots(benchmarks: &Benchmarks, output_file: &str) -> Result<Vec<
             (
                 "memory_usage",
                 "Memory Usage Over Time",
-                |frame: &BenchmarkFrame| frame.memory_usage.try_into().unwrap(),
+                |frame: &BenchmarkFrame| {
+                    frame
+                        .memory_usage
+                        .try_into()
+                        .expect("Failed to convert memory usage to i64")
+                },
             ),
             (
                 "virtual_memory_usage",
                 "Virtual Memory Usage Over Time",
-                |frame: &BenchmarkFrame| frame.virtual_memory_usage.try_into().unwrap(),
+                |frame: &BenchmarkFrame| {
+                    frame
+                        .virtual_memory_usage
+                        .try_into()
+                        .expect("Failed to convert virtual memory usage to i64")
+                },
             ),
             (
                 "disk_total_written_bytes",
                 "Disk Total Written Bytes Over Time",
-                |frame: &BenchmarkFrame| frame.disk_total_written_bytes.try_into().unwrap(),
+                |frame: &BenchmarkFrame| {
+                    frame
+                        .disk_total_written_bytes
+                        .try_into()
+                        .expect("Failed to convert disk_total_written_bytes usage to i64")
+                },
             ),
             (
                 "disk_written_bytes",
                 "Disk Written Bytes Over Time",
-                |frame: &BenchmarkFrame| frame.disk_written_bytes.try_into().unwrap(),
+                |frame: &BenchmarkFrame| {
+                    frame
+                        .disk_written_bytes
+                        .try_into()
+                        .expect("Failed to convert disk_written_bytes usage to i64")
+                },
             ),
             (
                 "disk_total_read_bytes",
                 "Disk Total Read Bytes Over Time",
-                |frame: &BenchmarkFrame| frame.disk_total_read_bytes.try_into().unwrap(),
+                |frame: &BenchmarkFrame| {
+                    frame
+                        .disk_total_read_bytes
+                        .try_into()
+                        .expect("Failed to convert disk_total_read_bytes usage to i64")
+                },
             ),
             (
                 "disk_read_bytes",
                 "Disk Read Bytes Over Time",
-                |frame: &BenchmarkFrame| frame.disk_read_bytes.try_into().unwrap(),
+                |frame: &BenchmarkFrame| {
+                    frame
+                        .disk_read_bytes
+                        .try_into()
+                        .expect("Failed to convert disk_read_bytes usage to i64")
+                },
             ),
         ];
 
-        let frames = benchmark.frames.lock().unwrap().clone();
+        let frames = benchmark
+            .frames
+            .lock()
+            .expect("Failed to get frames lock")
+            .clone();
 
         for (suffix, title, value_extractor) in &metrics {
             let output_file = format!("{output_file}_{}_{}.png", benchmark.name, suffix);
@@ -73,7 +107,8 @@ pub fn generate_plots(benchmarks: &Benchmarks, output_file: &str) -> Result<Vec<
                 y_max_calculator,
                 |frame| {
                     (
-                        i64::try_from(frame.relative_timestamp.as_millis()).unwrap(),
+                        i64::try_from(frame.relative_timestamp.as_millis())
+                            .expect("Failed to convert relative timestamp to i64"),
                         value_extractor(frame),
                     )
                 },
@@ -118,30 +153,64 @@ where
     // Split the drawing area into two: one for the chart and one for the legend
     let (upper, lower) = root.split_vertically(PLOT_HEIGHT - 20);
 
-    let frames = benchmark.frames.lock().unwrap().clone();
+    let frames = benchmark
+        .frames
+        .lock()
+        .expect("Failed to get benchmarking lock")
+        .clone();
     let phases = benchmark.phases.clone();
 
-    let start_time =
-        i64::try_from(benchmark.start_time.unwrap().as_millis()).map_err(|e| wrap!(e.into()))?;
-    let end_time =
-        i64::try_from(benchmark.end_time.unwrap().as_millis()).map_err(|e| wrap!(e.into()))?;
+    let start_time = i64::try_from(
+        benchmark
+            .start_time
+            .ok_or_else(|| wrap!("Failed to get start time from benchmark".into()))?
+            .as_millis(),
+    )
+    .map_err(|e| wrap!(e.into()))?;
+    let end_time = i64::try_from(
+        benchmark
+            .end_time
+            .ok_or_else(|| wrap!("Failed to get end time from benchmark".into()))?
+            .as_millis(),
+    )
+    .map_err(|e| wrap!(e.into()))?;
     let total_duration = end_time - start_time;
 
     // Find the minimum start time among all phases
     let min_start_time = phases
         .iter()
-        .map(|phase| i64::try_from(phase.start_time.unwrap().as_millis()).unwrap())
+        .map(|phase| {
+            i64::try_from(
+                phase
+                    .start_time
+                    .expect("Failed to get start time from phase")
+                    .as_millis(),
+            )
+            .expect("Failed to convert start time to i64")
+        })
         .min()
-        .unwrap();
+        .ok_or_else(|| wrap!("Failed to get min start time".into()))?;
 
     // Normalize the start and end times of each phase
     let normalized_phases: Vec<_> = phases
         .iter()
         .map(|phase| {
-            let start_time =
-                i64::try_from(phase.start_time.unwrap().as_millis()).unwrap() - min_start_time;
-            let end_time =
-                i64::try_from(phase.end_time.unwrap().as_millis()).unwrap() - min_start_time;
+            let start_time = i64::try_from(
+                phase
+                    .start_time
+                    .expect("Failed to get phase start time for normalized phases")
+                    .as_millis(),
+            )
+            .expect("Failed to convert start time to i64")
+                - min_start_time;
+            let end_time = i64::try_from(
+                phase
+                    .end_time
+                    .expect("Failed to get phase end time for normalized phases")
+                    .as_millis(),
+            )
+            .expect("Failed to convert end time to i64")
+                - min_start_time;
             (start_time, end_time, phase.name.clone())
         })
         .collect();
@@ -172,7 +241,10 @@ where
                 format!(
                     "{}-{}",
                     x,
-                    name.to_string().split_whitespace().next().unwrap()
+                    name.to_string()
+                        .split_whitespace()
+                        .next()
+                        .expect("Failed to get phase name for x label")
                 )
             } else {
                 format!("{x}")

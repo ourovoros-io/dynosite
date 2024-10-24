@@ -9,7 +9,7 @@ impl Data {
     /// Creates a new data folder in the site
     pub fn new(root_folder: std::path::PathBuf) -> Self {
         if !root_folder.exists() {
-            std::fs::create_dir_all(&root_folder).unwrap();
+            std::fs::create_dir_all(&root_folder).expect("Failed to create data folder");
         }
 
         Self {

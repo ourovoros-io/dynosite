@@ -12,8 +12,10 @@ jobs:
 
     env:
       GITHUB_TOKEN: ${{ secrets.TOKEN }}
-      TARGET_REPO: ${{ secrets.TARGET_REPO }}
-      TARGET_NAME: ${{ secrets.TARGET_NAME }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
 
     steps:
     - name: Checkout repository
@@ -60,31 +62,20 @@ jobs:
         echo "PR_TITLE=$PR_TITLE" >> $GITHUB_ENV
         echo "PR_URL=$PR_URL" >> $GITHUB_ENV
 
-    - name: Clone target repository
+    - name: Install AWS CLI
       run: |
-        cd /home/runner/work/
-        git clone https://github.com/${{ env.TARGET_REPO }} ${{ env.TARGET_NAME }}
-        cd ${{ env.TARGET_NAME }}
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
+        sudo apt-get update
+        sudo apt-get install -y awscli
 
-    - name: Get folder name inside site/data
-      id: get_folder_name
+    - name: Configure AWS CLI
       run: |
-          FOLDER_NAME=$(ls -d /home/runner/work/${{ env.TARGET_NAME }}/site/data/*/ | xargs -n 1 basename)
-          echo "FOLDER_NAME=$FOLDER_NAME" >> $GITHUB_ENV
+        aws configure set aws_access_key_id ${{ env.AWS_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ env.AWS_SECRET_ACCESS_KEY }}
+        aws configure set region ${{ env.AWS_REGION }}
 
-    - name: Move benchmarks data to dyno folder
-      id: move_benchmarks_data_to_dyno_folder
+    - name: Download data from S3
       run: |
-          mkdir -p /home/runner/work/benchmarks
-          mkdir -p /home/runner/work/benchmarks/stats
-          mkdir -p /home/runner/work/benchmarks/runs
-          mkdir -p /home/runner/work/benchmarks/flamegraphs
-          cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/* /home/runner/work/benchmarks/
-          cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/${{ env.FOLDER_NAME }}/stats/* /home/runner/work/benchmarks/stats
-          cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/${{ env.FOLDER_NAME }}/runs/* /home/runner/work/benchmarks/runs
-          cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/${{ env.FOLDER_NAME }}/flamegraphs/* /home/runner/work/benchmarks/flamegraphs
+        aws s3 sync s3://${{ env.S3_BUCKET }}/site/data /home/runner/work/benchmarks
 
     - name: Build sway
       run: |
@@ -104,7 +95,7 @@ jobs:
     - name: Run dyno tool
       run: |
         cd /home/runner/work/
-        ./dyno -t sway/sway/test/src/sdk-harness/test_projects/ -f sway/sway/target/release/forc 
+        ./dyno -t sway/sway/test/src/sdk-harness/test_projects/hashing/ -f sway/sway/target/release/forc --flamegraph
 
     - name: Install Dyno Site
       run: |
@@ -120,22 +111,14 @@ jobs:
     - name: Run Dyno Site
       run: |
         cd /home/runner/work/ 
-        ./dynosite -b /home/runner/work/benchmarks -p "${{ env.PR_HASH }}" -t "${{ env.PR_TITLE }}" -l "${{ env.PR_URL }}" --data-only
+        ./dynosite -b /home/runner/work/benchmarks -p "${{ env.PR_HASH }}" -t "${{ env.PR_TITLE }}" -l "${{ env.PR_URL }}" 
 
-    - name: Copy generated files
+    - name: Upload generated files to S3
       run: |
-        cp -r /home/runner/work/site/data /home/runner/work/${{ env.TARGET_NAME }}/site/
-        cp /home/runner/work/site/error.html /home/runner/work/${{ env.TARGET_NAME }}/site
-        cp /home/runner/work/site/index.html /home/runner/work/${{ env.TARGET_NAME }}/site
+        aws s3 sync /home/runner/work/site/data s3://${{ env.S3_BUCKET }}/site/data
+        aws s3 cp /home/runner/work/site/error.html s3://${{ env.S3_BUCKET }}/site/error.html
+        aws s3 cp /home/runner/work/site/index.html s3://${{ env.S3_BUCKET }}/site/index.html
 
     - name: Update README
       run: |
-        cd /home/runner/work/${{ env.TARGET_NAME }}
-        echo "[View the generated index.html](./site/index.html)" > README.md
-
-    - name: Commit and push changes
-      run: |
-        cd /home/runner/work/${{ env.TARGET_NAME }}
-        git add .
-        git commit -m "Update benchmarks and data for PR #${{ env.PR_NUMBER }}"
-        git push https://x-access-token:${{ env.GITHUB_TOKEN }}@github.com/${{ env.TARGET_REPO }}.git main
+        echo "[View the generated index.html](https://${{ env.S3_BUCKET }}.s3.${{ env.AWS_REGION }}.amazonaws.com/site/index.html)" > README.md

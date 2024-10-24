@@ -1,4 +1,9 @@
 #![warn(clippy::all, clippy::pedantic)]
+#![allow(clippy::struct_field_names)]
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_lines)]
 
 use clap::Parser;
 
@@ -28,6 +33,7 @@ fn init() -> Result<()> {
     // Add the execution to the site
     site.add_execution(
         &Execution::new(&site.data.root_folder.clone(), &options).map_err(|e| wrap!(e))?,
+        options.data_only,
     )
     .map_err(|e| wrap!(e))?;
 
