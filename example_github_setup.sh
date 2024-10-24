@@ -32,13 +32,13 @@ function error_exit {
 sleep 5
 
 # Run the dyno tool
-"$DYNO" -t "$SWAY_TEST_FOLDER" -f "$SWAY_FORC_LOCATION" --flamegraph -data-only || error_exit "Failed to run dyno tool"
+"$DYNO" -t "$SWAY_TEST_FOLDER" -f "$SWAY_FORC_LOCATION"  || error_exit "Failed to run dyno tool"
 
 # Wait for 5 seconds as warm-up time
 sleep 5
 
 # Run it twice to get the benchmarks folder structure with some intial data for stats
-"$DYNO" -t "$SWAY_TEST_FOLDER" -f "$SWAY_FORC_LOCATION" --flamegraph --data-only || error_exit "Failed to run dyno tool"
+"$DYNO" -t "$SWAY_TEST_FOLDER" -f "$SWAY_FORC_LOCATION"  || error_exit "Failed to run dyno tool"
 
 # Get the item in the benchmarks/stats folder
 ITEM_PATH=$(find "$BENCHMARKS_FOLDER/stats" -type f -mindepth 1 -maxdepth 1 | head -n 1) || error_exit "Failed to get item in benchmarks/stats folder"

@@ -104,7 +104,7 @@ jobs:
     - name: Run dyno tool
       run: |
         cd /home/runner/work/
-        ./dyno -t sway/sway/test/src/sdk-harness/test_projects/ -f sway/sway/target/release/forc --flamegraph --data-only
+        ./dyno -t sway/sway/test/src/sdk-harness/test_projects/ -f sway/sway/target/release/forc 
 
     - name: Install Dyno Site
       run: |

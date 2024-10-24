@@ -95,7 +95,7 @@ jobs:
     - name: Run dyno tool
       run: |
         cd /home/runner/work/
-        ./dyno -t sway/sway/test/src/sdk-harness/test_projects/hashing/ -f sway/sway/target/release/forc
+        ./dyno -t sway/sway/test/src/sdk-harness/test_projects/hashing/ -f sway/sway/target/release/forc --flamegraph
 
     - name: Install Dyno Site
       run: |
@@ -111,7 +111,7 @@ jobs:
     - name: Run Dyno Site
       run: |
         cd /home/runner/work/ 
-        ./dynosite -b /home/runner/work/benchmarks -p "${{ env.PR_HASH }}" -t "${{ env.PR_TITLE }}" -l "${{ env.PR_URL }}"
+        ./dynosite -b /home/runner/work/benchmarks -p "${{ env.PR_HASH }}" -t "${{ env.PR_TITLE }}" -l "${{ env.PR_URL }}" 
 
     - name: Upload generated files to S3
       run: |
