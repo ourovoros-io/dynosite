@@ -28,10 +28,13 @@ function error_exit {
     exit 1
 }
 
+# Wait for 5 seconds as warm-up time
+sleep 5
+
 # Run the dyno tool
 "$DYNO" -t "$SWAY_TEST_FOLDER" -f "$SWAY_FORC_LOCATION" --flamegraph -data-only || error_exit "Failed to run dyno tool"
 
-# Wait for 5 seconds
+# Wait for 5 seconds as warm-up time
 sleep 5
 
 # Run it twice to get the benchmarks folder structure with some intial data for stats
