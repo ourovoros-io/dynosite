@@ -57,11 +57,11 @@ impl Execution {
             let stat_file_path = stats_folder.join(stat_file_name);
             std::fs::copy(stat, &stat_file_path).map_err(|e| wrap!(e.into()))?;
         }
-        
+
         let flamegraphs = if !options.data_only {
             let flamegraphs =
-            Self::get_latest_entries(&options.benchmarks_folder.join("flamegraphs"), 2)
-                .map_err(|e| wrap!(e))?;
+                Self::get_latest_entries(&options.benchmarks_folder.join("flamegraphs"), 2)
+                    .map_err(|e| wrap!(e))?;
             for flamegraph_folder in &flamegraphs {
                 copy_dir_all(
                     flamegraph_folder,
@@ -81,7 +81,6 @@ impl Execution {
         } else {
             None
         };
-        
 
         // Get the latest benchmarks
         let (current_benchmarks_path, previous_benchmarks_path) =
@@ -95,8 +94,14 @@ impl Execution {
             parse_json_benchmarks(&current_benchmarks_path).map_err(|e| wrap!(e))?;
 
         // Generate the plots
-        let plots = if !options.data_only { Some(Self::generate_plots(&previous_benchmarks, &current_benchmarks, &plots_folder)
-            .map_err(|e| wrap!(e))?) } else { None };
+        let plots = if !options.data_only {
+            Some(
+                Self::generate_plots(&previous_benchmarks, &current_benchmarks, &plots_folder)
+                    .map_err(|e| wrap!(e))?,
+            )
+        } else {
+            None
+        };
 
         // Create the github information structure
         let github_information = crate::types::PRInformation {
