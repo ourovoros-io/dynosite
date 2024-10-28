@@ -20,8 +20,8 @@ pub struct Execution {
     pub flamegraphs_folder: PathBuf,
     pub runs: Vec<PathBuf>,
     pub stats: Vec<PathBuf>,
-    pub plots: Vec<PathBuf>,
-    pub flamegraphs: Vec<PathBuf>,
+    pub plots: Option<Vec<PathBuf>>,
+    pub flamegraphs: Option<Vec<PathBuf>>,
 }
 
 impl Execution {
@@ -57,25 +57,31 @@ impl Execution {
             let stat_file_path = stats_folder.join(stat_file_name);
             std::fs::copy(stat, &stat_file_path).map_err(|e| wrap!(e.into()))?;
         }
-
-        let flamegraphs =
+        
+        let flamegraphs = if !options.data_only {
+            let flamegraphs =
             Self::get_latest_entries(&options.benchmarks_folder.join("flamegraphs"), 2)
                 .map_err(|e| wrap!(e))?;
-        for flamegraph_folder in &flamegraphs {
-            copy_dir_all(
-                flamegraph_folder,
-                &flamegraphs_folder.join(
-                    flamegraph_folder
-                        .file_name()
-                        .ok_or_else(|| wrap!("Failed to get filename for flamegraph".into()))?
-                        .to_str()
-                        .ok_or_else(|| {
-                            wrap!("Failed to convert flamegraph filename to string".into())
-                        })?,
-                ),
-            )
-            .map_err(|e| wrap!(e))?;
-        }
+            for flamegraph_folder in &flamegraphs {
+                copy_dir_all(
+                    flamegraph_folder,
+                    &flamegraphs_folder.join(
+                        flamegraph_folder
+                            .file_name()
+                            .ok_or_else(|| wrap!("Failed to get filename for flamegraph".into()))?
+                            .to_str()
+                            .ok_or_else(|| {
+                                wrap!("Failed to convert flamegraph filename to string".into())
+                            })?,
+                    ),
+                )
+                .map_err(|e| wrap!(e))?;
+            }
+            Some(flamegraphs)
+        } else {
+            None
+        };
+        
 
         // Get the latest benchmarks
         let (current_benchmarks_path, previous_benchmarks_path) =
@@ -89,8 +95,8 @@ impl Execution {
             parse_json_benchmarks(&current_benchmarks_path).map_err(|e| wrap!(e))?;
 
         // Generate the plots
-        let plots = Self::generate_plots(&previous_benchmarks, &current_benchmarks, &plots_folder)
-            .map_err(|e| wrap!(e))?;
+        let plots = if options.data_only { Some(Self::generate_plots(&previous_benchmarks, &current_benchmarks, &plots_folder)
+            .map_err(|e| wrap!(e))?) } else { None };
 
         // Create the github information structure
         let github_information = crate::types::PRInformation {
