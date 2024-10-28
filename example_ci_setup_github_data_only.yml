@@ -80,11 +80,9 @@ jobs:
           mkdir -p /home/runner/work/benchmarks
           mkdir -p /home/runner/work/benchmarks/stats
           mkdir -p /home/runner/work/benchmarks/runs
-          mkdir -p /home/runner/work/benchmarks/flamegraphs
           cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/* /home/runner/work/benchmarks/
           cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/${{ env.FOLDER_NAME }}/stats/* /home/runner/work/benchmarks/stats
           cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/${{ env.FOLDER_NAME }}/runs/* /home/runner/work/benchmarks/runs
-          cp -r /home/runner/work/${{ env.TARGET_NAME }}/site/data/${{ env.FOLDER_NAME }}/flamegraphs/* /home/runner/work/benchmarks/flamegraphs
 
     - name: Build sway
       run: |
