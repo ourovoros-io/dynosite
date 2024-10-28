@@ -95,7 +95,7 @@ impl Execution {
             parse_json_benchmarks(&current_benchmarks_path).map_err(|e| wrap!(e))?;
 
         // Generate the plots
-        let plots = if options.data_only { Some(Self::generate_plots(&previous_benchmarks, &current_benchmarks, &plots_folder)
+        let plots = if !options.data_only { Some(Self::generate_plots(&previous_benchmarks, &current_benchmarks, &plots_folder)
             .map_err(|e| wrap!(e))?) } else { None };
 
         // Create the github information structure
