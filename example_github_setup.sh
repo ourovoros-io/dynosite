@@ -31,7 +31,7 @@ function error_exit {
 # Wait for 5 seconds as warm-up time
 sleep 5
 
-# Run the dyno tool
+# Run the dyno tool (We are running it without the flamegraph support so that we can host in github pages)
 "$DYNO" -t "$SWAY_TEST_FOLDER" -f "$SWAY_FORC_LOCATION"  || error_exit "Failed to run dyno tool"
 
 # Wait for 5 seconds as warm-up time
