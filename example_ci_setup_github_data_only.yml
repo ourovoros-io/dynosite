@@ -86,7 +86,7 @@ jobs:
 
     - name: Build sway
       run: |
-        cargo build --release --features profiler
+        cargo build --release
 
     - name: Install dyno tool
       run: |
